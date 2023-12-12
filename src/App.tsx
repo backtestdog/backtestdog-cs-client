@@ -1,35 +1,41 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import io, { Socket } from "socket.io-client";
+
+import MessageInput from "./components/MessageInput/MessageInput";
+import Messages from "./components/Messages/Messages";
+
+const CONNECT_URL = "http://localhost:8001";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [socket, setSocket] = useState<Socket>();
+  const [messages, setMessages] = useState<string[]>([]);
+
+  const send = (message: string) => {
+    socket?.emit("message", message);
+  };
+
+  const messageListener = (message: string) => {
+    setMessages([...messages, message]);
+  };
+
+  useEffect(() => {
+    const newSocket = io(CONNECT_URL);
+    setSocket(newSocket);
+  }, [setSocket]);
+
+  useEffect(() => {
+    socket?.on("message", messageListener);
+    return () => {
+      socket?.off("message", messageListener);
+    };
+  }, [socket, messageListener]);
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <MessageInput send={send} />
+      <Messages messages={messages} />
     </>
-  )
+  );
 }
 
-export default App
+export default App;
